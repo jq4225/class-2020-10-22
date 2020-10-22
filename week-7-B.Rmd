@@ -26,12 +26,25 @@ The parameter $H$ is still the average number of hours of work reported by stude
 
 Review the Cardinal Virtues which serve as our guide for data science. Under Justice, is this model predictive or causal? What would the Preceptor Table look like? Write down the mathematical model we are using.
 
+This is predictive -- there are no causal factors included in our model. Preceptor table is just class and hours. The model is just y_i = average_i + residual_i.
+
+```{r}
+fit_obj <- stan_glm(hours ~ 1, data = qscores, refresh = 0)
+
+print(fit_obj)
+```
 
 
 ## Scene 2
 
 **Prompt:** Create a plot of the posterior probability distribution for $H$. Interpret the plot. 
+Hours are somewhere around 6.2 the vast majority of the time. Variance isn't too big.
 
+```{r}
+fit_obj %>% as_tibble() %>%
+  rename("mu" = "(Intercept)") %>%
+  ggplot(aes(x = mu)) + geom_histogram(bins = 100, color = "white")
+```
 
 
 
@@ -46,6 +59,20 @@ Define D as the number of hours difference between the workload of two randomly 
 
 
 What is your posterior probability distribution for D? 
+```{r}
+fit_obj_2 <- posterior_predict(fit_obj) %>%
+  as_tibble()
+
+diffs <- tibble(pred_1 = fit_obj_2$"1", pred_2 = fit_obj_2$"2") %>%
+  rowwise() %>%
+  mutate(diff = pred_1 - pred_2)
+
+fit_obj_3 <- stan_glm(diff ~ 1, data = diffs, refresh = 0) %>%
+  as_tibble() %>%
+  rename("mu" = "(Intercept)")
+
+quantile(fit_obj_3$mu, probs = c(0.05, 0.95))
+```
 
 
 
